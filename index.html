@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Rush</title>
+    <style>
+        /* --- Style 3: Chalkboard (Definitive Version) --- */
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Marhey:wght@500&display=swap');
+
+        :root {
+            --primary-color: #007bff;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --orange-color: #fd7e14;
+            --light-gray: #f8f9fa;
+            --medium-gray: #e9ecef;
+            --dark-gray: #6c757d;
+            --text-color: #333;
+            --border-radius: 8px;
+            --gold-color: #FFD700;
+            
+            --chalk-white: #f1f1f1;
+            --chalk-green: #2ecc71;
+            --chalk-red: #e74c3c;
+            --chalk-blue: #3498db;
+            --chalk-yellow: #f1c40f;
+            --red-tint: sepia(1) saturate(10) hue-rotate(0deg) brightness(1.1);
+            --chalkboard-bg: #2c3e50;
+            --container-bg: #34495e;
+        }
+
+        body {
+            font-family: 'Caveat', cursive; /* English Font */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            background-color: var(--chalkboard-bg);
+            color: var(--chalk-white);
+            box-sizing: border-box;
+        }
+        
+        body.rtl {
+            direction: rtl;
+            font-family: 'Marhey', cursive; /* Arabic Font */
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--container-bg);
+            padding: 40px;
+            border-radius: var(--border-radius);
+            border: 10px solid #8e6a3d;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 5px 15px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        .screen { display: none; flex-direction: column; align-items: center; gap: 20px; }
+        #main-menu-screen { display: flex; }
+
+        h1, h2 { 
+            margin: 0 0 10px 0; 
+            font-size: clamp(2.5rem, 7vw, 3.5rem);
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+        }
+        h1 {
+            margin: 0;
+        }
+
+        p { color: #ddd; margin: 0; font-size: 1.5em; }
+        #credits { font-size: 1em; color: var(--chalk-blue); opacity: 0.8; margin-top: 20px; }
+
+        #lang-reset-container { display: flex; gap: 10px; width: 100%; max-width: 320px; font-size: clamp(0.5rem, 7vw, 0.7rem);}
+        #lang-reset-container .btn { width: 100%; }
+        body.rtl #lang-reset-container { flex-direction: row-reverse; }
+
+        #game-screen-layout { display: grid; grid-template-areas: "header" "question" "choices"; gap: 20px; width: 100%; }
+        #header { grid-area: header; display: flex; justify-content: space-between; align-items: center; padding: 0 5px; position: relative; }
+        body.rtl #header { flex-direction: row-reverse; }
+        #question-area { grid-area: question; background: transparent; padding: 25px 20px; border-radius: 0; }
+        #question { font-size: clamp(2.5rem, 8vw, 4rem); margin: 0; direction: ltr; text-align: center; }
+        #choices-area { grid-area: choices; display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .star { font-size: 1.5em; color: #555; }
+        .star.filled { color: var(--chalk-yellow); }
+
+        #timer-bar { width: 100%; background-color: rgba(0,0,0,0.5); height: 8px; margin-top: 15px; overflow: hidden; border-radius: 4px; }
+        #timer-progress {
+            height: 100%;
+            width: 100%;
+            background-color: var(--chalk-green);
+            transition: width 0.1s linear, background-color 0.5s;
+        }
+        
+        #skip-level-btn { position: absolute; top: 0; right: 0; }
+        body.rtl #skip-level-btn { right: auto; left: 0; }
+
+        .btn {
+            display: inline-flex; justify-content: center; align-items: center;
+            padding: 15px 30px;
+            font-family: inherit; /* Inherit font from body */
+            font-size: 1.5em;
+            font-weight: 600;
+            cursor: pointer;
+            border: 2px solid var(--chalk-white);
+            border-radius: var(--border-radius);
+            background-color: transparent;
+            color: var(--chalk-white);
+            transition: all 0.2s;
+            width: 90%;
+            max-width: 300px;
+            box-shadow: none;
+        }
+        .btn:disabled { border-color: #666; color: #666; cursor: not-allowed; }
+        .btn:hover:not(:disabled) { background-color: var(--chalk-white); color: var(--container-bg); transform: none; box-shadow: none; }
+        
+        .btn-secondary { border-color: var(--chalk-blue); color: var(--chalk-blue); }
+        .btn-secondary:hover:not(:disabled) { background-color: var(--chalk-blue); color: white; }
+        .btn-danger { border-color: var(--chalk-red); color: var(--chalk-red); }
+        .btn-retry { border-color: var(--chalk-blue); color: var(--chalk-blue); }
+
+        #level-start-actions, #level-complete-actions { display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%; margin-top: 15px; }
+
+        .choice-btn {
+            padding: 20px;
+            font-size: clamp(1.8rem, 6vw, 2.5rem);
+            border: 2px solid var(--chalk-white);
+            background-color: transparent;
+            color: var(--chalk-white);
+            border-radius: var(--border-radius);
+            transition: all 0.2s;
+        }
+        .choice-btn:hover:not(:disabled) { background-color: var(--chalk-white); color: var(--container-bg); }
+        .choice-btn.correct { background-color: var(--chalk-green); border-color: var(--chalk-green); color: white; }
+        .choice-btn.incorrect { background-color: var(--chalk-red); border-color: var(--chalk-red); color: white; }
+        
+        #level-select-grid, #extra-level-select-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 15px; margin-top: 10px; width: 100%;
+        }
+        @media (min-width: 768px) {
+            #level-select-grid, #extra-level-select-grid { grid-template-columns: repeat(5, 1fr); }
+        }
+        .level-btn {
+            padding: 15px 10px;
+            font-family: inherit; /* Inherit font from body */
+            font-size: clamp(1.3rem, 4vw, 1.5rem);
+            border: 3px solid var(--chalk-white);
+            background-color: transparent;
+            background-image: none;
+            transition: all 0.2s;
+            color: var(--chalk-white);
+            text-shadow: 0 0 5px var(--chalkboard-bg), 0 0 5px var(--chalkboard-bg);
+        }
+        .level-btn .level-stars { font-size: 0.7em; margin-top: 5px; display: block; }
+        .level-btn.unlocked:hover { background-color: rgba(255,255,255,0.1); transform: translateY(-3px); }
+        .level-btn.locked { 
+            border-color: #666; 
+            color: #666; 
+            cursor: not-allowed;
+            text-shadow: none;
+        }
+        
+        .level-btn.passed-campaign, .level-btn.passed-extra {
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+                url('https://www.onlygfx.com/wp-content/uploads/2022/03/chalk-scribble-2.png');
+            background-size: 130%;
+            background-position: center;
+        }
+        .level-btn.passed-campaign { border-color: var(--chalk-green); color: var(--chalk-green); }
+        .level-btn.passed-extra { 
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
+                url('https://www.onlygfx.com/wp-content/uploads/2022/03/chalk-scribble-2.png');
+            border-color: var(--chalk-white);
+            color: var(--chalk-blue);
+            filter: var(--red-tint);
+        }
+        .level-btn.mastered { 
+            border-color: var(--chalk-yellow); 
+            color: var(--chalk-yellow); 
+            box-shadow: 0 0 12px -2px var(--chalk-yellow);
+        }
+        #level-start-progress { font-size: 1.5em; color: #ddd; }
+        #level-start-questions { display: none; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="main-menu-screen" class="screen">
+            <h1 data-i18n="mainMenuTitle">Math Rush</h1>
+            <p data-i18n="mainMenuSubtitle">Test your calculation speed and accuracy!</p>
+            <button id="goto-level-select-btn" class="btn" data-i18n="selectLevel">Select Level</button>
+            <div id="lang-reset-container">
+                <button id="toggle-lang-btn" class="btn btn-secondary" data-i18n="switchLanguage">العربية</button>
+                <button id="reset-progress-btn" class="btn btn-danger" data-i18n="resetProgress">Reset Progress</button>
+            </div>
+            <p id="credits" data-i18n="credits">Game by Abdullah</p>
+        </div>
+        <div id="level-select-screen" class="screen">
+            <h2 data-i18n="campaignLevels">Campaign Levels</h2>
+            <div id="level-select-grid"></div>
+            <h2 id="extra-levels-header" data-i18n="extraLevels" style="display: none;">Extra Levels</h2>
+            <div id="extra-level-select-grid"></div>
+            <button id="back-to-main-menu-btn" class="btn btn-secondary" data-i18n="mainMenu">Main Menu</button>
+        </div>
+        <div id="level-start-screen" class="screen">
+            <h1 id="level-start-title">Level 1</h1>
+            <div id="level-start-stars"></div>
+            <p id="level-start-progress">Completed: 0 / 5</p>
+            <p id="level-start-questions">5 Questions</p>
+            <p id="level-start-goal">Answer 3 correctly to pass!</p>
+            <div id="level-start-actions">
+                <button id="begin-level-btn" class="btn" data-i18n="begin">Begin</button>
+                <button id="back-to-levels-from-start-btn" class="btn btn-secondary" data-i18n="backToLevels">Back to Levels</button>
+            </div>
+        </div>
+        <div id="game-screen" class="screen">
+            <div id="game-screen-layout">
+                <div id="header">
+                    <h2 id="level-title">Level 1</h2>
+                    <div id="score">Correct: 0 / 0</div>
+                    <div id="stars"></div>
+                </div>
+                <div id="question-area">
+                    <p id="question">2 + 2 =</p>
+                    <div id="timer-bar"><div id="timer-progress"></div></div>
+                </div>
+                <div id="choices-area"></div>
+            </div>
+        </div>
+        <div id="level-complete-screen" class="screen">
+            <h1 id="level-complete-title">Level Complete!</h1>
+            <div id="final-stars"></div>
+            <p id="level-complete-message">You answered 0 out of 5 correctly.</p>
+            <div id="level-complete-actions">
+                <button id="continue-level-btn" class="btn" data-i18n="continue">Continue</button>
+                <button id="retry-level-btn" class="btn btn-retry" data-i18n="tryAgain">Try Again</button>
+                <button id="back-to-levels-btn" class="btn btn-secondary" data-i18n="backToLevels">Back to Levels</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const devmode = 1;
+    const questionLists = {
+        easyAddSub: [
+            { q: "1 + 1", t: 6 }, { q: "2 + 3", t: 6 }, { q: "4 + 5", t: 6 }, { q: "6 + 2", t: 6 },
+            { q: "7 - 3", t: 6 }, { q: "9 - 4", t: 6 }, { q: "5 + 6", t: 6 }, { q: "8 + 7", t: 6 },
+            { q: "10 - 2", t: 6 }, { q: "11 - 5", t: 6 }, { q: "3 + 9", t: 6 }, { q: "12 - 6", t: 6 },
+            { q: "13 - 7", t: 6 }, { q: "14 - 8", t: 6 }, { q: "15 - 9", t: 6 }, { q: "4 + 7", t: 6 },
+            { q: "6 + 9", t: 7 }, { q: "2 + 14", t: 7 }, { q: "5 + 11", t: 7 }, { q: "16 - 7", t: 7 },
+            { q: "17 - 8", t: 7 }, { q: "18 - 9", t: 7 }, { q: "3 + 12", t: 7 }, { q: "7 + 8", t: 6 },
+            { q: "19 - 10", t: 7 }, { q: "20 - 11", t: 7 }, { q: "9 + 10", t: 7 }, { q: "1 + 19", t: 7 },
+            { q: "2 + 18", t: 7 }, { q: "21 - 12", t: 7 }, { q: "22 - 13", t: 7 }, { q: "6 + 15", t: 7 },
+            { q: "8 + 13", t: 7 }, { q: "14 + 6", t: 7 }, { q: "23 - 14", t: 7 }, { q: "24 - 15", t: 7 },
+            { q: "11 + 5", t: 6 }, { q: "12 + 4", t: 6 }, { q: "25 - 16", t: 7 }, { q: "26 - 17", t: 7 },
+            { q: "7 + 17", t: 8 }, { q: "3 + 20", t: 8 }, { q: "13 + 9", t: 7 }, { q: "18 + 2", t: 6 },
+            { q: "27 - 18", t: 8 }, { q: "28 - 19", t: 8 }, { q: "15 + 5", t: 6 }, { q: "9 + 16", t: 7 },
+            { q: "29 - 20", t: 8 }, { q: "30 - 21", t: 8 }, { q: "10 + 14", t: 7 }, { q: "11 + 13", t: 7 },
+            { q: "31 - 22", t: 8 }, { q: "2 + 29", t: 8 }, { q: "4 + 27", t: 8 }, { q: "12 + 19", t: 8 },
+            { q: "16 + 8", t: 7 }, { q: "33 - 24", t: 8 }, { q: "34 - 25", t: 8 }, { q: "7 + 26", t: 8 },
+            { q: "18 + 9", t: 7 }, { q: "35 - 26", t: 8 }, { q: "36 - 27", t: 8 }, { q: "13 + 23", t: 8 },
+            { q: "14 + 22", t: 8 }, { q: "37 - 28", t: 8 }, { q: "38 - 29", t: 8 }, { q: "19 + 12", t: 7 },
+            { q: "20 + 11", t: 7 }, { q: "39 - 30", t: 8 }, { q: "40 - 31", t: 8 }, { q: "21 + 10", t: 7 },
+            { q: "22 + 9", t: 7 }, { q: "23 + 8", t: 7 }, { q: "24 + 7", t: 7 }, { q: "25 + 6", t: 7 },
+            { q: "26 + 5", t: 7 }, { q: "27 + 4", t: 7 }, { q: "28 + 3", t: 7 }, { q: "29 + 2", t: 7 },
+            { q: "30 + 1", t: 7 }, { q: "33 - 3", t: 6 }, { q: "34 - 4", t: 6 }, { q: "35 - 5", t: 6 },
+            { q: "36 - 6", t: 6 }, { q: "37 - 7", t: 6 }, { q: "38 - 8", t: 6 }, { q: "39 - 9", t: 6 },
+            { q: "40 - 10", t: 6 }, { q: "41 - 11", t: 7 }, { q: "42 - 12", t: 7 }, { q: "43 - 13", t: 7 },
+            { q: "44 - 14", t: 7 }, { q: "45 - 15", t: 7 }, { q: "46 - 16", t: 7 }, { q: "47 - 17", t: 7 },
+            { q: "48 - 18", t: 7 }, { q: "49 - 19", t: 7 }, { q: "50 - 20", t: 7 } 
+        ],
+        easyMulDiv: [
+            { q: "3 * 4", t: 6 }, { q: "8 / 2", t: 6 }, { q: "6 * 3", t: 6 }, { q: "9 / 3", t: 6 },
+            { q: "2 * 9", t: 6 }, { q: "18 / 2", t: 6 }, { q: "7 * 5", t: 6 }, { q: "15 / 3", t: 6 },
+            { q: "4 * 6", t: 6 }, { q: "12 / 4", t: 6 }, { q: "9 * 2", t: 6 }, { q: "16 / 4", t: 6 },
+            { q: "8 * 3", t: 6 }, { q: "24 / 6", t: 6 }, { q: "5 * 5", t: 6 }, { q: "25 / 5", t: 6 },
+            { q: "6 * 7", t: 7 }, { q: "42 / 7", t: 7 }, { q: "3 * 8", t: 6 }, { q: "24 / 3", t: 6 },
+            { q: "9 * 4", t: 7 }, { q: "36 / 9", t: 6 }, { q: "7 * 8", t: 8 }, { q: "56 / 8", t: 8 },
+            { q: "5 * 9", t: 7 }, { q: "45 / 9", t: 7 }, { q: "4 * 8", t: 6 }, { q: "32 / 4", t: 6 },
+            { q: "6 * 9", t: 7 }, { q: "54 / 9", t: 7 }, { q: "3 * 9", t: 6 }, { q: "27 / 3", t: 6 },
+            { q: "2 * 8", t: 6 }, { q: "16 / 4", t: 6 }, { q: "7 * 6", t: 7 }, { q: "42 / 6", t: 7 },
+            { q: "8 * 5", t: 7 }, { q: "40 / 8", t: 7 }, { q: "9 * 5", t: 7 }, { q: "45 / 5", t: 7 },
+            { q: "10 * 6", t: 8 }, { q: "60 / 10", t: 8 }, { q: "11 * 4", t: 8 }, { q: "44 / 4", t: 8 },
+            { q: "12 * 3", t: 8 }, { q: "36 / 6", t: 8 }, { q: "13 * 2", t: 8 }, { q: "26 / 2", t: 8 },
+            { q: "14 * 3", t: 8 }, { q: "42 / 7", t: 8 }, { q: "15 * 2", t: 8 }, { q: "30 / 5", t: 8 },
+            { q: "16 * 2", t: 8 }, { q: "32 / 8", t: 8 }, { q: "17 * 2", t: 8 }, { q: "34 / 2", t: 8 },
+            { q: "18 * 3", t: 8 }, { q: "54 / 6", t: 8 }, { q: "19 * 4", t: 8 }, { q: "76 / 4", t: 8 },
+            { q: "11 * 5", t: 8 }, { q: "55 / 11", t: 8 }, { q: "12 * 6", t: 8 }, { q: "72 / 12", t: 8 },
+            { q: "13 * 5", t: 8 }, { q: "65 / 5", t: 8 }, { q: "14 * 4", t: 8 }, { q: "56 / 7", t: 8 },
+            { q: "15 * 3", t: 8 }, { q: "45 / 9", t: 8 }, { q: "16 * 4", t: 8 }, { q: "64 / 8", t: 8 },
+            { q: "17 * 3", t: 8 }, { q: "51 / 3", t: 8 }, { q: "18 * 2", t: 8 }, { q: "36 / 6", t: 8 },
+            { q: "19 * 2", t: 8 }, { q: "38 / 2", t: 8 }, { q: "12 * 9", t: 9 }, { q: "108 / 12", t: 9 },
+            { q: "11 * 8", t: 9 }, { q: "88 / 8", t: 9 }, { q: "13 * 7", t: 9 }, { q: "91 / 13", t: 9 },
+            { q: "14 * 6", t: 9 }, { q: "84 / 7", t: 9 }, { q: "15 * 5", t: 9 }, { q: "75 / 15", t: 9 },
+            { q: "16 * 6", t: 9 }, { q: "96 / 12", t: 9 }, { q: "17 * 4", t: 9 }, { q: "68 / 4", t: 9 },
+            { q: "18 * 5", t: 9 }, { q: "90 / 9", t: 9 }, { q: "19 * 3", t: 9 }, { q: "57 / 3", t: 9 },
+            { q: "20 * 2", t: 8 }, { q: "40 / 8", t: 8 }, { q: "10 * 10", t: 8 }, { q: "100 / 10", t: 8 }
+        ],
+        easyParentheses: [
+            { q: "(3 + 4) * 2", t: 8 }, { q: "(8 - 3) + 7", t: 6 }, { q: "12 - (5 + 3)", t: 6 },
+            { q: "(9 - 2) * 3", t: 8 }, { q: "(10 + 5) / 3", t: 9 }, { q: "20 / (2 + 3)", t: 9 },
+            { q: "5 * (6 - 2)", t: 8 }, { q: "(7 + 8) - 5", t: 6 }, { q: "18 - (4 * 3)", t: 8 },
+            { q: "(3 + 4) + (2 + 5)", t: 6 }, { q: "(9 - 5) * 4", t: 8 }, { q: "30 / (10 - 7)", t: 9 },
+            { q: "(8 + 2) * 3", t: 8 }, { q: "(12 - 7) * 2", t: 8 }, { q: "5 + (6 * 3)", t: 8 },
+            { q: "18 - (9 / 3)", t: 8 }, { q: "(4 + 8) / 2", t: 9 }, { q: "(15 - 5) / 2", t: 9 },
+            { q: "3 * (2 + 6)", t: 8 }, { q: "(7 + 3) * 4", t: 8 }, { q: "25 - (5 * 3)", t: 8 },
+            { q: "(10 - 8) * 6", t: 8 }, { q: "20 / (5 - 1)", t: 9 }, { q: "30 - (4 * 6)", t: 8 },
+            { q: "(2 + 3) * (4 - 1)", t: 9 }, { q: "(9 - 4) * 2", t: 8 }, { q: "(5 + 5) + 7", t: 6 },
+            { q: "(6 + 8) / 2", t: 9 }, { q: "(12 - 4) / 2", t: 9 }, { q: "10 + (3 * 2)", t: 8 },
+            { q: "(8 + 6) - 5", t: 6 }, { q: "(3 + 9) / 3", t: 9 }, { q: "14 - (2 + 3)", t: 6 },
+            { q: "2 * (5 + 3)", t: 8 }, { q: "(9 - 3) + 7", t: 6 }, { q: "18 / (9 - 6)", t: 9 },
+            { q: "(5 * 2) + 3", t: 8 }, { q: "(12 / 3) + 4", t: 8 }, { q: "(7 + 2) * 5", t: 8 },
+            { q: "40 / (8 - 3)", t: 9 }, { q: "(10 + 2) * 2", t: 8 }, { q: "(8 - 5) * 4", t: 8 },
+            { q: "(9 - 7) * 6", t: 8 }, { q: "(15 - 10) * 3", t: 8 }, { q: "14 / (7 - 5)", t: 9 },
+            { q: "(4 + 6) - 7", t: 6 }, { q: "(10 - 3) + 9", t: 6 }, { q: "(7 + 5) / 4", t: 9 },
+            { q: "2 * (3 + 7)", t: 8 }, { q: "(6 + 9) - 8", t: 6 }, { q: "(9 - 5) * 5", t: 8 },
+            { q: "21 / (9 - 6)", t: 9 }, { q: "(11 - 6) * 2", t: 8 }, { q: "(12 - 4) + 3", t: 6 },
+            { q: "(5 + 8) - 6", t: 6 }, { q: "(14 - 7) + 2", t: 6 }, { q: "3 * (4 + 5)", t: 8 },
+            { q: "(8 + 3) * 2", t: 8 }, { q: "28 / (7 - 3)", t: 9 }, { q: "(9 + 1) + 8", t: 6 },
+            { q: "(10 - 6) * 5", t: 8 }, { q: "(7 + 8) / 5", t: 9 }, { q: "(4 * 3) + 2", t: 8 },
+            { q: "(18 / 3) - 2", t: 8 }, { q: "(15 - 9) * 2", t: 8 }, { q: "24 / (6 - 2)", t: 9 },
+            { q: "(9 + 6) / 3", t: 9 }, { q: "3 + (5 * 4)", t: 8 }, { q: "(8 - 5) + 9", t: 6 },
+            { q: "10 - (3 * 2)", t: 8 }, { q: "(5 + 9) / 2", t: 9 }, { q: "(7 * 2) - 5", t: 8 },
+            { q: "(14 - 8) + 9", t: 6 }, { q: "15 / (3 + 2)", t: 9 }, { q: "(9 + 4) * 2", t: 8 },
+            { q: "(10 - 2) / 2", t: 9 }, { q: "(8 - 6) * 9", t: 8 }, { q: "18 / (9 - 7)", t: 9 },
+            { q: "(6 + 5) - 3", t: 6 }, { q: "(11 - 9) * 8", t: 8 }, { q: "(12 / 4) + 6", t: 8 },
+            { q: "3 * (7 - 5)", t: 8 }, { q: "(10 + 4) - 6", t: 6 }, { q: "24 / (8 - 5)", t: 9 },
+            { q: "(7 + 9) / 2", t: 9 }, { q: "(8 * 2) - 5", t: 8 }, { q: "16 - (4 + 2)", t: 6 },
+            { q: "(9 + 3) / 3", t: 9 }, { q: "3 * (5 + 1)", t: 8 }, { q: "(8 + 5) / 5", t: 9 },
+            { q: "(7 + 2) * 3", t: 8 }, { q: "(15 - 12) * 4", t: 8 }, { q: "(10 + 8) / 2", t: 9 },
+            { q: "(9 - 5) * 4", t: 8 }, { q: "(11 - 8) + 6", t: 6 }, { q: "21 / (7 - 4)", t: 9 },
+            { q: "(13 - 9) * 3", t: 8 }, { q: "(8 + 4) / 3", t: 9 }, { q: "16 / (4 - 2)", t: 9 },
+            { q: "(5 + 7) / 3", t: 9 }, { q: "(9 + 6) - 10", t: 6 }, { q: "(4 + 9) / 5", t: 9 },
+            { q: "(6 + 8) / 2", t: 9 }, { q: "(12 - 3) / 3", t: 9 }, { q: "18 - (9 / 3)", t: 8 }
+        ],
+        hardAddSub: [
+            { q: "47 + 86", t: 10 }, { q: "123 - 58", t: 12 }, { q: "95 + 37", t: 10 }, { q: "152 - 89", t: 12 },
+            { q: "78 + 65", t: 10 }, { q: "210 - 125", t: 12 }, { q: "349 + 278", t: 14 }, { q: "420 - 237", t: 13 },
+            { q: "567 + 289", t: 15 }, { q: "802 - 456", t: 14 }, { q: "134 + 289", t: 13 }, { q: "990 - 548", t: 14 },
+            { q: "265 + 317", t: 13 }, { q: "500 - 278", t: 13 }, { q: "624 + 135", t: 14 }, { q: "715 - 469", t: 14 },
+            { q: "389 + 478", t: 14 }, { q: "853 - 297", t: 14 }, { q: "478 + 629", t: 15 }, { q: "905 - 437", t: 14 },
+            { q: "685 + 314", t: 14 }, { q: "1000 - 526", t: 14 }, { q: "299 + 405", t: 13 }, { q: "720 - 349", t: 13 },
+            { q: "410 + 189", t: 13 }, { q: "836 - 227", t: 13 }, { q: "156 + 287", t: 12 }, { q: "674 - 289", t: 13 },
+            { q: "321 + 445", t: 13 }, { q: "999 - 543", t: 14 }, { q: "205 + 390", t: 12 }, { q: "875 - 466", t: 13 },
+            { q: "658 + 142", t: 13 }, { q: "713 - 495", t: 14 }, { q: "527 + 318", t: 14 }, { q: "890 - 278", t: 13 },
+            { q: "614 + 295", t: 13 }, { q: "749 - 389", t: 13 }, { q: "324 + 671", t: 14 }, { q: "920 - 448", t: 14 },
+            { q: "156 + 729", t: 13 }, { q: "841 - 596", t: 14 }, { q: "683 + 274", t: 14 }, { q: "950 - 487", t: 14 },
+            { q: "299 + 600", t: 13 }, { q: "805 - 357", t: 13 }, { q: "430 + 590", t: 13 }, { q: "780 - 420", t: 13 },
+            { q: "247 + 395", t: 13 }, { q: "934 - 587", t: 14 }, { q: "664 + 218", t: 13 }, { q: "889 - 493", t: 14 },
+            { q: "123 + 875", t: 13 }, { q: "760 - 395", t: 13 }, { q: "675 + 289", t: 14 }, { q: "970 - 643", t: 14 },
+            { q: "385 + 517", t: 14 }, { q: "922 - 588", t: 14 }, { q: "567 + 348", t: 14 }, { q: "848 - 479", t: 14 },
+            { q: "710 + 259", t: 14 }, { q: "984 - 672", t: 15 }, { q: "823 + 149", t: 13 }, { q: "704 - 468", t: 14 },
+            { q: "267 + 835", t: 14 }, { q: "931 - 582", t: 14 }, { q: "419 + 580", t: 13 }, { q: "874 - 396", t: 13 },
+            { q: "351 + 489", t: 13 }, { q: "958 - 627", t: 14 }, { q: "466 + 530", t: 14 }, { q: "813 - 278", t: 13 },
+            { q: "699 + 301", t: 13 }, { q: "900 - 385", t: 13 }, { q: "483 + 612", t: 14 }, { q: "1000 - 712", t: 14 },
+            { q: "534 + 295", t: 13 }, { q: "829 - 487", t: 14 }, { q: "613 + 217", t: 13 }, { q: "742 - 395", t: 13 },
+            { q: "254 + 739", t: 14 }, { q: "956 - 487", t: 14 }, { q: "568 + 429", t: 14 }, { q: "849 - 563", t: 14 },
+            { q: "457 + 612", t: 14 }, { q: "932 - 498", t: 14 }, { q: "380 + 745", t: 14 }, { q: "907 - 486", t: 14 },
+            { q: "259 + 684", t: 13 }, { q: "981 - 627", t: 14 }, { q: "594 + 289", t: 13 }, { q: "873 - 448", t: 13 },
+            { q: "312 + 577", t: 13 }, { q: "999 - 486", t: 14 }, { q: "410 + 535", t: 13 }, { q: "905 - 371", t: 13 },
+            { q: "666 + 277", t: 14 }, { q: "840 - 465", t: 13 }, { q: "523 + 376", t: 13 }, { q: "731 - 489", t: 14 }
+        ],
+        hardMulDiv: [
+            { q: "23 * 19", t: 12 }, { q: "240 / 16", t: 10 }, { q: "45 * 14", t: 12 }, { q: "630 / 14", t: 10 },
+            { q: "18 * 14", t: 11 }, { q: "288 / 12", t: 10 }, { q: "21 * 15", t: 12 }, { q: "315 / 9", t: 10 },
+            { q: "24 * 16", t: 12 }, { q: "364 / 14", t: 10 }, { q: "25 * 18", t: 12 }, { q: "420 / 15", t: 10 },
+            { q: "27 * 22", t: 13 }, { q: "544 / 16", t: 10 }, { q: "28 * 25", t: 13 }, { q: "450 / 18", t: 10 },
+            { q: "32 * 15", t: 12 }, { q: "600 / 20", t: 10 }, { q: "33 * 21", t: 13 }, { q: "378 / 14", t: 10 },
+            { q: "36 * 19", t: 13 }, { q: "495 / 11", t: 10 }, { q: "42 * 18", t: 13 }, { q: "512 / 16", t: 10 }, 
+            { q: "48 * 12", t: 11 }, { q: "720 / 15", t: 10 }, { q: "52 * 15", t: 12 }, { q: "864 / 12", t: 10 },
+            { q: "54 * 18", t: 12 }, { q: "416 / 13", t: 13 }, { q: "56 * 16", t: 12 }, { q: "504 / 12", t: 10 }, 
+            { q: "63 * 14", t: 12 }, { q: "441 / 9", t: 10 }, { q: "65 * 15", t: 12 }, { q: "715 / 13", t: 13 },
+            { q: "72 * 11", t: 11 }, { q: "864 / 18", t: 10 }, { q: "75 * 13", t: 12 }, { q: "600 / 12", t: 10 },
+            { q: "84 * 15", t: 12 }, { q: "756 / 14", t: 10 }, { q: "90 * 17", t: 13 }, { q: "990 / 15", t: 10 },
+            { q: "96 * 12", t: 12 }, { q: "1152 / 16", t: 10 }, { q: "25 * 25", t: 12 }, { q: "625 / 25", t: 10 },
+            { q: "32 * 18", t: 12 }, { q: "480 / 20", t: 10 }, { q: "36 * 14", t: 12 }, { q: "504 / 12", t: 10 },
+            { q: "42 * 16", t: 12 }, { q: "672 / 14", t: 10 }, { q: "48 * 13", t: 12 }, { q: "624 / 12", t: 10 },
+            { q: "54 * 17", t: 13 }, { q: "648 / 18", t: 10 }, { q: "60 * 11", t: 12 }, { q: "660 / 15", t: 10 },
+            { q: "66 * 12", t: 12 }, { q: "594 / 11", t: 10 }, { q: "72 * 13", t: 12 }, { q: "576 / 12", t: 10 },
+            { q: "78 * 15", t: 13 }, { q: "546 / 13", t: 13 }, { q: "84 * 11", t: 12 }, { q: "504 / 14", t: 10 },
+            { q: "88 * 14", t: 12 }, { q: "792 / 18", t: 10 }, { q: "96 * 15", t: 13 }, { q: "672 / 16", t: 10 },
+            { q: "102 * 12", t: 12 }, { q: "816 / 12", t: 10 }, { q: "108 * 11", t: 12 }, { q: "972 / 18", t: 10 },
+            { q: "112 * 15", t: 13 }, { q: "784 / 14", t: 10 }, { q: "120 * 13", t: 12 }, { q: "720 / 12", t: 10 },
+            { q: "125 * 18", t: 13 }, { q: "1000 / 25", t: 10 }, { q: "132 * 11", t: 12 }, { q: "1188 / 18", t: 10 },
+            { q: "140 * 13", t: 12 }, { q: "980 / 14", t: 10 }, { q: "144 * 12", t: 12 }, { q: "1152 / 16", t: 10 },
+            { q: "150 * 11", t: 12 }, { q: "1350 / 18", t: 10 }, { q: "160 * 14", t: 13 }, { q: "960 / 12", t: 10 },
+            { q: "175 * 12", t: 13 }, { q: "1400 / 20", t: 10 }, { q: "180 * 15", t: 13 }, { q: "1620 / 18", t: 10 },
+            { q: "192 * 11", t: 12 }, { q: "1344 / 14", t: 10 }, { q: "200 * 16", t: 13 }, { q: "1800 / 20", t: 10 }
+        ],
+        hardParentheses: [
+            { q: "(13 + 8) * (7 - 3)", t: 10 }, { q: "98 - (5 * (3 + 9))", t: 13 }, { q: "(45 / 8) + (7 * 9)", t: 13 }, { q: "12 * (14 - 5)", t: 10 },
+            { q: "(27 + 16) / (9 - 3)", t: 10 }, { q: "82 - ((4 + 7) * 5)", t: 12 }, { q: "(50 / (7 + 3)) + 9", t: 12 }, { q: "11 * (9 - (2 + 4))", t: 11 },
+            { q: "(39 / 7) * (12 - 8)", t: 13 }, { q: "210 - (23 * (4 + 3))", t: 14 }, { q: "(17 + 11) / (6 - 2)", t: 11 }, { q: "65 / (4 + (5 - 3))", t: 11 },
+            { q: "153 - ((19 + 6) * 3)", t: 12 }, { q: "(47 - 13) / (9 - 5)", t: 11 }, { q: "(29 + 14) * (6 - 4)", t: 10 }, { q: "(59 / (7 + 3)) * 4", t: 12 },
+            { q: "(67 / 9) * (7 - 3)", t: 13 }, { q: "128 - (9 * (11 + 2))", t: 14 }, { q: "78 / (5 + (3 - 2))", t: 11 }, { q: "92 - ((10 - 4) * 9)", t: 14 },
+            { q: "(83 / 10) * (9 - 2)", t: 13 }, { q: "205 - ((9 + 5) * 9)", t: 14 }, { q: "(66 / (8 - 5)) + 13", t: 12 }, { q: "(71 / 8) * (5 + 4)", t: 13 },
+            { q: "(124 / (11 - 5)) + 15", t: 14 }, { q: "298 - ((19 + 9) * 8)", t: 15 }, { q: "(97 - 28) / (7 - 4)", t: 12 }, { q: "(53 / (13 - 8)) * 3", t: 12 },
+            { q: "(62 + 22) / (10 - 6)", t: 11 }, { q: "242 - ((17 + 5) * 8)", t: 14 }, { q: "(77 / (14 / 3)) + 12", t: 14 }, { q: "118 / (6 + (8 - 5))", t: 12 },
+            { q: "(88 / 11) * (10 - 6)", t: 11 }, { q: "178 - (13 * (9 - 4))", t: 13 }, { q: "(39 / (8 - 3)) + 19", t: 12 }, { q: "203 / (11 + (8 - 6))", t: 12 },
+            { q: "((47 / 9) + 3) * 6", t: 13 }, { q: "188 - ((9 + 6) * 9)", t: 14 }, { q: "((21 + 7) / 5) * 4", t: 11 }, { q: "403 / ((13 - 7) + 4)", t: 12 },
+            { q: "(91 / (13 - 8)) + 7", t: 12 }, { q: "(49 / 7) * (9 - 3)", t: 10 }, { q: "255 - ((21 + 10) * 5)", t: 14 }, { q: "184 / (9 - (5 + 1))", t: 13 },
+            { q: "((26 + 18) / 9) * 4", t: 11 }, { q: "(83 - (11 * 6)) + 63", t: 12 }, { q: "(91 / (13 - 8)) * 4", t: 12 }, { q: "358 / ((17 / 4) + 8)", t: 15 },
+            { q: "(53 / 7) + (6 * 5)", t: 12 }, { q: "119 - ((7 + 4) * 9)", t: 12 }, { q: "(34 + 19) / (8 - 3)", t: 11 }, { q: "109 / (5 + (6 - 2))", t: 12 },
+            { q: "(139 / 13) * (9 - 4)", t: 14 }, { q: "259 - (11 * (13 + 8))", t: 15 }, { q: "(73 / (16 - 5)) + 9", t: 12 }, { q: "(210 / 11) + (5 * 4)", t: 12 },
+            { q: "((93 / 11) + 15) * 2", t: 13 }, { q: "307 - ((14 + 9) * 11)", t: 15 }, { q: "(51 + 33) / (9 - 4)", t: 11 }, { q: "(79 / (11 - 5)) * 6", t: 12 },
+            { q: "(47 + 19) / (9 - 5)", t: 10 }, { q: "215 - ((12 + 6) * 9)", t: 14 }, { q: "(113 / (11 - 6)) + 9", t: 12 }, { q: "411 / ((11 + 3) - 5)", t: 12 },
+            { q: "(99 / (14 - 8)) * 5", t: 13 }, { q: "289 - ((7 + 13) * 11)", t: 15 }, { q: "(43 / (9 - 5)) + 14", t: 11 }, { q: "182 / ((14 - 8) + 4)", t: 12 },
+            { q: "(78 + 27) / (11 - 6)", t: 11 }, { q: "324 - ((11 + 11) * 13)", t: 15 }, { q: "(91 / (18 / 4)) + 9", t: 13 }, { q: "246 / (8 + (6 - 4))", t: 12 },
+            { q: "(103 / (26 / 5)) + 8", t: 13 }, { q: "(87 / 9) * (8 - 3)", t: 13 }, { q: "209 - ((14 + 11) * 7)", t: 14 }, { q: "305 / ((16 - 9) + 7)", t: 12 },
+            { q: "(127 / (21 - 11)) + 16", t: 13 }, { q: "502 - ((27 + 14) * 11)", t: 15 }, { q: "(109 / (9 - 3)) + 14", t: 12 }, { q: "487 / ((13 - 9) + 6)", t: 12 },
+            { q: "(65 + 23) / (9 - 3)", t: 10 }, { q: "268 - ((9 + 7) * 13)", t: 15 }, { q: "(159 / (11 - 5)) + 10", t: 13 }, { q: "366 / ((15 / 3) + 8)", t: 14 },
+            { q: "(187 / (13 - 7)) + 12", t: 13 }, { q: "408 - ((19 + 12) * 9)", t: 14 }, { q: "(221 / (17 / 3)) + 11", t: 14 }, { q: "715 / ((23 / 5) + 9)", t: 15 },
+            { q: "(97 / (9 - 5)) * 5", t: 12 }, { q: "543 - ((8 + 12) * 19)", t: 15 }, { q: "(123 / (16 / 4)) + 9", t: 13 }, { q: "602 / ((19 - 10) + 5)", t: 13 },
+            { q: "(102 + 39) / (11 - 5)", t: 11 }, { q: "362 - ((12 + 10) * 14)", t: 15 }, { q: "(149 / (21 / 4)) + 10", t: 13 }, { q: "496 / ((17 / 3) + 8)", t: 14 },
+            { q: "(118 / (12 - 5)) + 11", t: 12 }, { q: "512 - ((24 + 20) * 10)", t: 15 }, { q: "(165 / (11 - 5)) + 17", t: 13 }, { q: "553 / ((21 / 4) + 10)", t: 14 },
+            { q: "(108 / (11 - 5)) + 13", t: 12 }, { q: "482 - ((17 + 15) * 11)", t: 15 }, { q: "(239 / (15 / 3)) + 9", t: 13 }, { q: "733 / ((24 / 6) + 12)", t: 14 }
+        ],
+        // 99 roots
+        easyRoots: [
+            { q: "Math.sqrt(4)", t: 6, eval: true }, { q: "Math.sqrt(9)", t: 6, eval: true }, { q: "Math.sqrt(16)", t: 6, eval: true }, { q: "Math.sqrt(25)", t: 6, eval: true },
+            { q: "Math.sqrt(36)", t: 6, eval: true }, { q: "Math.sqrt(49)", t: 6, eval: true }, { q: "Math.sqrt(64)", t: 6, eval: true }, { q: "Math.sqrt(81)", t: 6, eval: true },
+            { q: "Math.sqrt(100)", t: 6, eval: true }, { q: "Math.sqrt(121)", t: 6, eval: true }, { q: "Math.sqrt(144)", t: 6, eval: true }, { q: "Math.sqrt(169)", t: 6, eval: true },
+            { q: "Math.sqrt(196)", t: 6, eval: true }, { q: "Math.sqrt(225)", t: 6, eval: true }, { q: "Math.sqrt(256)", t: 6, eval: true }, { q: "Math.sqrt(289)", t: 6, eval: true },
+            { q: "Math.sqrt(324)", t: 6, eval: true }, { q: "Math.sqrt(361)", t: 6, eval: true }, { q: "Math.sqrt(400)", t: 6, eval: true }, { q: "Math.sqrt(441)", t: 6, eval: true },
+            { q: "Math.sqrt(484)", t: 6, eval: true }, { q: "Math.sqrt(529)", t: 7, eval: true }, { q: "Math.sqrt(576)", t: 7, eval: true }, { q: "Math.sqrt(625)", t: 7, eval: true },
+            { q: "Math.sqrt(676)", t: 7, eval: true }, { q: "Math.sqrt(729)", t: 7, eval: true }, { q: "Math.sqrt(784)", t: 7, eval: true }, { q: "Math.sqrt(841)", t: 7, eval: true },
+            { q: "Math.sqrt(900)", t: 7, eval: true }, { q: "Math.sqrt(961)", t: 7, eval: true }, { q: "Math.sqrt(1024)", t: 7, eval: true }, { q: "Math.sqrt(1089)", t: 7, eval: true },
+            { q: "Math.sqrt(1156)", t: 7, eval: true }, { q: "Math.sqrt(1225)", t: 7, eval: true }, { q: "Math.sqrt(1296)", t: 7, eval: true }, { q: "Math.sqrt(1369)", t: 7, eval: true },
+            { q: "Math.sqrt(1444)", t: 7, eval: true }, { q: "Math.sqrt(1521)", t: 7, eval: true }, { q: "Math.sqrt(1600)", t: 7, eval: true }, { q: "Math.sqrt(1681)", t: 7, eval: true },
+            { q: "Math.sqrt(1764)", t: 7, eval: true }, { q: "Math.sqrt(1849)", t: 7, eval: true }, { q: "Math.sqrt(1936)", t: 7, eval: true }, { q: "Math.sqrt(2025)", t: 7, eval: true },
+            { q: "Math.sqrt(2116)", t: 7, eval: true }, { q: "Math.sqrt(2209)", t: 7, eval: true }, { q: "Math.sqrt(2304)", t: 7, eval: true }, { q: "Math.sqrt(2401)", t: 7, eval: true },
+            { q: "Math.sqrt(2500)", t: 7, eval: true }, { q: "Math.sqrt(2601)", t: 7, eval: true }, { q: "Math.sqrt(2704)", t: 8, eval: true }, { q: "Math.sqrt(2809)", t: 8, eval: true },
+            { q: "Math.sqrt(2916)", t: 8, eval: true }, { q: "Math.sqrt(3025)", t: 8, eval: true }, { q: "Math.sqrt(3136)", t: 8, eval: true }, { q: "Math.sqrt(3249)", t: 8, eval: true },
+            { q: "Math.sqrt(3364)", t: 8, eval: true }, { q: "Math.sqrt(3481)", t: 8, eval: true }, { q: "Math.sqrt(3600)", t: 8, eval: true }, { q: "Math.sqrt(3721)", t: 8, eval: true },
+            { q: "Math.sqrt(3844)", t: 8, eval: true }, { q: "Math.sqrt(3969)", t: 8, eval: true }, { q: "Math.sqrt(4096)", t: 8, eval: true }, { q: "Math.sqrt(4225)", t: 8, eval: true },
+            { q: "Math.sqrt(4356)", t: 8, eval: true }, { q: "Math.sqrt(4489)", t: 8, eval: true }, { q: "Math.sqrt(4624)", t: 8, eval: true }, { q: "Math.sqrt(4761)", t: 8, eval: true },
+            { q: "Math.sqrt(4900)", t: 8, eval: true }, { q: "Math.sqrt(5041)", t: 8, eval: true }, { q: "Math.sqrt(5184)", t: 8, eval: true }, { q: "Math.sqrt(5329)", t: 8, eval: true },
+            { q: "Math.sqrt(5476)", t: 8, eval: true }, { q: "Math.sqrt(5625)", t: 8, eval: true }, { q: "Math.sqrt(5776)", t: 8, eval: true }, { q: "Math.sqrt(5929)", t: 8, eval: true },
+            { q: "Math.sqrt(6084)", t: 8, eval: true }, { q: "Math.sqrt(6241)", t: 8, eval: true }, { q: "Math.sqrt(6400)", t: 8, eval: true }, { q: "Math.sqrt(6561)", t: 8, eval: true },
+            { q: "Math.sqrt(6724)", t: 8, eval: true }, { q: "Math.sqrt(6889)", t: 8, eval: true }, { q: "Math.sqrt(7056)", t: 8, eval: true }, { q: "Math.sqrt(7225)", t: 8, eval: true },
+            { q: "Math.sqrt(7396)", t: 8, eval: true }, { q: "Math.sqrt(7569)", t: 8, eval: true }, { q: "Math.sqrt(7744)", t: 8, eval: true }, { q: "Math.sqrt(7921)", t: 8, eval: true },
+            { q: "Math.sqrt(8100)", t: 9, eval: true }, { q: "Math.sqrt(8281)", t: 9, eval: true }, { q: "Math.sqrt(8464)", t: 9, eval: true }, { q: "Math.sqrt(8649)", t: 9, eval: true },
+            { q: "Math.sqrt(8836)", t: 9, eval: true }, { q: "Math.sqrt(9025)", t: 9, eval: true }, { q: "Math.sqrt(9216)", t: 9, eval: true }, { q: "Math.sqrt(9409)", t: 9, eval: true },
+            { q: "Math.sqrt(9604)", t: 9, eval: true }, { q: "Math.sqrt(9801)", t: 9, eval: true }
+        ]
+    };
+    const levels = [
+        { level: 1, questions: 5, passMark: 3, pools: { easyAddSub: 1 } },
+        { level: 2, questions: 6, passMark: 4, pools: { easyAddSub: 0.7, easyMulDiv: 0.3 } },
+        { level: 3, questions: 7, passMark: 5, pools: { easyMulDiv: 0.6, easyAddSub: 0.4 } },
+        { level: 4, questions: 8, passMark: 6, pools: { easyMulDiv: 0.5, easyParentheses: 0.5 } },
+        { level: 5, questions: 8, passMark: 6, pools: { easyParentheses: 0.6, easyAddSub: 0.4 } },
+        { level: 6, questions: 9, passMark: 7, pools: { easyParentheses: 0.5, easyMulDiv: 0.4, easyAddSub: 0.1 } },
+        { level: 7, questions: 9, passMark: 7, pools: { easyMulDiv: 0.4, easyParentheses: 0.4, hardAddSub: 0.2 } },
+        { level: 8, questions: 10, passMark: 8, pools: { easyParentheses: 0.5, hardAddSub: 0.2, hardMulDiv: 0.2, easyRoots: 0.1 } },
+        { level: 9, questions: 10, passMark: 8, pools: { easyParentheses: 0.4, hardAddSub: 0.2, hardMulDiv: 0.2, easyRoots: 0.2 } },
+        { level: 10, questions: 12, passMark: 10, pools: { hardAddSub: 0.25, hardMulDiv: 0.25, easyParentheses: 0.25, easyRoots: 0.25 } },
+        { level: 11, questions: 12, passMark: 10, pools: { hardAddSub: 0.6, hardMulDiv: 0.4 } },
+        { level: 12, questions: 13, passMark: 11, pools: { hardMulDiv: 0.5, hardParentheses: 0.5 } },
+        { level: 13, questions: 13, passMark: 11, pools: { hardParentheses: 0.6, easyRoots: 0.4 } },
+        { level: 14, questions: 14, passMark: 12, pools: { easyRoots: 0.7, hardAddSub: 0.3 } },
+        { level: 15, questions: 15, passMark: 13, pools: { hardAddSub: 0.4, hardMulDiv: 0.6 } },
+        { level: 16, questions: 15, passMark: 13, pools: { hardMulDiv: 0.4, hardParentheses: 0.6 } },
+        { level: 17, questions: 16, passMark: 14, pools: { hardParentheses: 0.6, easyRoots: 0.4 } },
+        { level: 18, questions: 18, passMark: 16, pools: { hardAddSub: 0.3, hardMulDiv: 0.3, hardParentheses: 0.4 } },
+        { level: 19, questions: 20, passMark: 18, pools: { hardParentheses: 0.5, easyRoots: 0.5 } },
+        { level: 20, questions: 25, passMark: 23, pools: { hardAddSub: 0.25, hardMulDiv: 0.25, hardParentheses: 0.25, easyRoots: 0.25 } }
+    ];
+
+    const i18n = {
+        en: {
+            mainMenuTitle: "Math Rush", mainMenuSubtitle: "Test your calculation speed and accuracy!", selectLevel: "Select Level", switchLanguage: "العربية", resetProgress: "Reset Progress", credits: "Game by Abdullah", campaignLevels: "Campaign Levels", extraLevels: "Extra Levels", begin: "Begin", continue: "Continue to Next Level", tryAgain: "Try Again", backToLevels: "Back to Levels", mainMenu: "Main Menu", level: "Level", retry: "Retry", completed: "Completed", questions: "Questions", goal: "Answer {passMark} correctly to pass!", goalRetry: "Answer ALL {numQuestions} correctly to advance!", levelMastered: "Level Mastered!", wellDone: "Well Done!", keepTrying: "Keep Trying!", runResult: "You answered {score} out of {total} correctly this run.", totalProgress: "Total Progress: {progress} / {total}"
+        },
+        ar: {
+            mainMenuSubtitle: "اختبر سرعتك ودقتك في الحساب!", selectLevel: "اختر مرحلة", switchLanguage: "English", resetProgress: "إعادة تعيين التقدم", campaignLevels: "المراحل الأساسية", extraLevels: "مراحل إضافية", begin: "ابدأ", continue: "المتابعة للمرحلة التالية", tryAgain: "حاول مرة أخرى", backToLevels: "العودة إلى المراحل", mainMenu: "القائمة الرئيسية", level: "مرحلة", retry: "إعادة", completed: "اكتمل", questions: "أسئلة", goal: "أجب على {passMark} بشكل صحيح للنجاح!", goalRetry: "أجب على كل الأسئلة ({numQuestions}) بشكل صحيح للتقدم!", levelMastered: "أتقنت المرحلة!", wellDone: "أحسنت!", keepTrying: "واصل المحاولة!", runResult: "لقد أجبت على {score} من {total} بشكل صحيح هذه المرة.", totalProgress: "التقدم الإجمالي: {progress} / {total}"
+        }
+    };
+
+    let gameProgress;
+    let currentLevelIndex = 0;
+    let levelQuestions = [];
+    let missedOnThisAttempt = [];
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let timerInterval;
+
+    const defaultGameProgress = () => ({
+        unlockedLevel: 1, stars: {}, seenQuestions: [], levelProgress: {}, retryData: {}
+    });
+
+    const allScreens = document.querySelectorAll('.screen');
+    const questionDisplay = document.getElementById('question');
+    const choicesArea = document.getElementById('choices-area');
+
+    function showScreen(screenId) {
+        allScreens.forEach(screen => {
+            screen.style.display = (screen.id === screenId) ? 'flex' : 'none';
+        });
+        updateUIText(screenId);
+    }
+    
+    function startLevel() {
+        score = 0; currentQuestionIndex = 0; missedOnThisAttempt = [];
+        const stars = gameProgress.stars[currentLevelIndex] || 0;
+        const retryPoolsForLevel = gameProgress.retryData[currentLevelIndex];
+        const pendingRetryPools = (stars < 3 && retryPoolsForLevel && retryPoolsForLevel.length > 0) ? retryPoolsForLevel : [];
+        if (pendingRetryPools.length > 0) { levelQuestions = selectRetryQuestions(pendingRetryPools); } 
+        else {
+            if (stars < 3) { gameProgress.levelProgress[currentLevelIndex] = 0; }
+            levelQuestions = selectNewQuestionsForLevel(levels[currentLevelIndex]);
+        }
+        const header = document.getElementById('header');
+        const oldSkipBtn = document.getElementById('skip-level-btn');
+        if(oldSkipBtn) oldSkipBtn.remove();
+        if (devmode === 1) {
+            const skipBtn = document.createElement('button');
+            skipBtn.id = 'skip-level-btn'; skipBtn.className = 'btn btn-danger'; skipBtn.textContent = 'Skip'; skipBtn.onclick = skipLevel;
+            header.appendChild(skipBtn);
+        }
+        showScreen('game-screen');
+        loadQuestion();
+    }
+
+    function skipLevel() {
+        clearInterval(timerInterval);
+        score = levels[currentLevelIndex].questions; 
+        gameProgress.levelProgress[currentLevelIndex] = levels[currentLevelIndex].questions;
+        missedOnThisAttempt = [];
+        endLevel();
+    }
+
+    function endLevel() {
+        const levelConfig = levels[currentLevelIndex];
+        const previousProgress = gameProgress.levelProgress[currentLevelIndex] || 0;
+        let newTotalProgress = previousProgress;
+        if ((gameProgress.stars[currentLevelIndex] || 0) < 3) {
+             newTotalProgress += score;
+             gameProgress.levelProgress[currentLevelIndex] = newTotalProgress;
+        }
+        let stars = 0;
+        if (newTotalProgress >= levelConfig.questions) {
+            stars = 3;
+            newTotalProgress = levelConfig.questions;
+            gameProgress.levelProgress[currentLevelIndex] = newTotalProgress;
+        } else if (newTotalProgress / levelConfig.questions > 0.66) { stars = 2; } 
+        else if (newTotalProgress >= levelConfig.passMark) { stars = 1; }
+        gameProgress.stars[currentLevelIndex] = Math.max(gameProgress.stars[currentLevelIndex] || 0, stars);
+        if (gameProgress.stars[currentLevelIndex] >= 1 && currentLevelIndex + 1 < levels.length) {
+            gameProgress.unlockedLevel = Math.max(gameProgress.unlockedLevel, levels[currentLevelIndex].level + 1);
+        }
+        if (gameProgress.stars[currentLevelIndex] === 3) { gameProgress.retryData[currentLevelIndex] = []; } 
+        else { gameProgress.retryData[currentLevelIndex] = missedOnThisAttempt.map(q => q.pool); }
+        saveProgress();
+        showScreen('level-complete-screen');
+    }
+
+    function updateUIText(screenId) {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (i18n[currentLanguage][key]) { el.textContent = i18n[currentLanguage][key]; }
+        });
+        if (!screenId) return;
+        switch(screenId) {
+            case 'level-select-screen': populateLevelSelector(); break;
+            case 'level-start-screen': {
+                const levelConfig = levels[currentLevelIndex];
+                const stars = gameProgress.stars[currentLevelIndex] || 0;
+                const progress = gameProgress.levelProgress[currentLevelIndex] || 0;
+                let pendingRetryPools = (stars < 3) ? (gameProgress.retryData[currentLevelIndex] || []) : [];
+                const isRetry = pendingRetryPools.length > 0;
+                const numQuestions = isRetry ? pendingRetryPools.length : levelConfig.questions;
+                const passMark = isRetry ? numQuestions : levelConfig.passMark;
+                document.getElementById('level-start-title').textContent = `${i18n[currentLanguage].level} ${levelConfig.level}` + (isRetry ? ` (${i18n[currentLanguage].retry})` : '');
+                document.getElementById('level-start-stars').innerHTML = getStarHTML(stars);
+                document.getElementById('level-start-progress').textContent = `${i18n[currentLanguage].completed}: ${progress} / ${levelConfig.questions}`;
+                document.getElementById('level-start-goal').textContent = isRetry ? i18n[currentLanguage].goalRetry.replace('{numQuestions}', numQuestions) : i18n[currentLanguage].goal.replace('{passMark}', passMark);
+                break;
+            }
+            case 'game-screen':
+                document.getElementById('level-title').textContent = `${i18n[currentLanguage].level} ${levels[currentLevelIndex].level}`;
+                document.getElementById('stars').innerHTML = getStarHTML(gameProgress.stars[currentLevelIndex] || 0);
+                updateScoreDisplay();
+                break;
+            case 'level-complete-screen': {
+                const levelConfig = levels[currentLevelIndex];
+                const totalProgress = gameProgress.levelProgress[currentLevelIndex] || 0;
+                const currentStars = gameProgress.stars[currentLevelIndex] || 0;
+                const passedLevel = currentStars >= 1;
+                document.getElementById('continue-level-btn').style.display = (passedLevel && currentLevelIndex < levels.length - 1) ? 'flex' : 'none';
+                document.getElementById('retry-level-btn').style.display = (currentStars === 3) ? 'none' : 'flex';
+                document.getElementById('final-stars').innerHTML = getStarHTML(currentStars);
+                let titleKey = 'keepTrying';
+                if (currentStars === 3) titleKey = 'levelMastered';
+                else if (passedLevel) titleKey = 'wellDone';
+                document.getElementById('level-complete-title').textContent = i18n[currentLanguage][titleKey];
+                const runResultText = i18n[currentLanguage].runResult.replace('{score}', score).replace('{total}', levelQuestions.length);
+                const totalProgressText = i18n[currentLanguage].totalProgress.replace('{progress}', totalProgress).replace('{total}', levelConfig.questions);
+                document.getElementById('level-complete-message').innerHTML = `${runResultText}<br>${totalProgressText}`;
+                break;
+            }
+        }
+    }
+    
+    function populateLevelSelector() {
+        const campaignGrid = document.getElementById('level-select-grid');
+        const extraGrid = document.getElementById('extra-level-select-grid');
+        const extraHeader = document.getElementById('extra-levels-header');
+        campaignGrid.innerHTML = ''; extraGrid.innerHTML = '';
+        const extraLevelsUnlocked = (gameProgress.stars[9] || 0) >= 1;
+        extraHeader.style.display = extraLevelsUnlocked ? 'block' : 'none';
+        levels.forEach((levelConfig, index) => {
+            const isCampaign = index < 10;
+            const grid = isCampaign ? campaignGrid : extraGrid;
+            if (!isCampaign && !extraLevelsUnlocked) return;
+            const isUnlocked = levelConfig.level <= gameProgress.unlockedLevel;
+            const button = document.createElement('button');
+            button.className = 'level-btn';
+            button.classList.add(isUnlocked ? 'unlocked' : 'locked');
+            button.disabled = !isUnlocked;
+            button.innerHTML = `${i18n[currentLanguage].level} ${levelConfig.level}<span class="level-stars">${getStarHTML(gameProgress.stars[index] || 0)}</span>`;
+            const stars = gameProgress.stars[index] || 0;
+            if (isUnlocked) {
+                if (stars >= 1) { button.classList.add(isCampaign ? 'passed-campaign' : 'passed-extra'); }
+                if (stars === 3) { button.classList.add('mastered'); }
+            }
+            if (isUnlocked) { button.onclick = () => { currentLevelIndex = index; showScreen('level-start-screen'); }; }
+            grid.appendChild(button);
+        });
+    }
+
+    function updateScoreDisplay() { document.getElementById('score').textContent = `${currentLanguage === 'ar' ? 'الصحيحة' : 'Correct'}: ${score} / ${levelQuestions.length}`; }
+    function toggleLanguage() {
+        currentLanguage = (currentLanguage === 'en') ? 'ar' : 'en';
+        document.body.classList.toggle('rtl', currentLanguage === 'ar');
+        localStorage.setItem('speedMathLanguage', currentLanguage);
+        updateUIText(Array.from(allScreens).find(s => s.style.display === 'flex')?.id);
+    }
+    function initializeQuestions() { for (const key in questionLists) { questionLists[key].forEach((q, index) => { q.id = `${key}_${index}`; q.pool = key; }); } }
+    function saveProgress() { localStorage.setItem('speedMathProgress', JSON.stringify(gameProgress)); }
+    function loadProgress() {
+        const saved = localStorage.getItem('speedMathProgress');
+        gameProgress = saved ? JSON.parse(saved) : defaultGameProgress();
+        currentLanguage = localStorage.getItem('speedMathLanguage') || 'en';
+        document.body.classList.toggle('rtl', currentLanguage === 'ar');
+    }
+    function resetProgress() {
+        if (confirm(currentLanguage === 'en' ? "Are you sure you want to reset all your progress? This cannot be undone." : "هل أنت متأكد أنك تريد إعادة ضبط كل تقدمك؟ لا يمكن التراجع عن هذا الإجراء.")) {
+            localStorage.removeItem('speedMathProgress');
+            gameProgress = defaultGameProgress();
+            showScreen('main-menu-screen');
+        }
+    }
+    function selectRetryQuestions(poolsToRetry) {
+        let selected = [];
+        for (const poolName of poolsToRetry) {
+            const fullPool = questionLists[poolName];
+            let available = fullPool.filter(q => !gameProgress.seenQuestions.includes(q.id));
+            if (available.length === 0) available = fullPool;
+            selected.push(available[Math.floor(Math.random() * available.length)]);
+        }
+        return shuffleArray(selected);
+    }
+    function selectNewQuestionsForLevel(levelConfig) {
+        let selected = [];
+        for (const poolName in levelConfig.pools) {
+            const list = questionLists[poolName];
+            const count = Math.round(levelConfig.questions * levelConfig.pools[poolName]);
+            let available = list.filter(q => !gameProgress.seenQuestions.includes(q.id));
+            if(available.length < count) available.push(...list.filter(q => gameProgress.seenQuestions.includes(q.id)));
+            shuffleArray(available);
+            selected.push(...available.slice(0, count));
+        }
+        while (selected.length < levelConfig.questions) {
+            const randomPoolName = Object.keys(levelConfig.pools)[0];
+            selected.push(questionLists[randomPoolName][0]);
+        }
+        return shuffleArray(selected.slice(0, levelConfig.questions));
+    }
+    function loadQuestion() {
+        if (currentQuestionIndex >= levelQuestions.length) { endLevel(); return; }
+        const questionData = levelQuestions[currentQuestionIndex];
+        if (!gameProgress.seenQuestions.includes(questionData.id)) { gameProgress.seenQuestions.push(questionData.id); }
+        const questionText = questionData.eval ? questionData.q.replace(/Math.sqrt/g, '√') : questionData.q;
+        questionDisplay.textContent = `${questionText} =`;
+        generateChoices(questionData);
+        startTimer(questionData.t);
+    }
+    function generateChoices(questionData) {
+        const correctAnswer = eval(questionData.q);
+        let choices = new Set([correctAnswer]);
+        while (choices.size < 4) {
+            const offset = Math.ceil(Math.random() * 10) * (Math.random() < 0.5 ? -1 : 1);
+            let incorrectAnswer = correctAnswer + offset;
+            if (incorrectAnswer === correctAnswer || incorrectAnswer < 0) incorrectAnswer = correctAnswer + Math.ceil(Math.random() * 5) + 1;
+            choices.add(incorrectAnswer);
+        }
+        choicesArea.innerHTML = '';
+        shuffleArray(Array.from(choices)).forEach(choice => {
+            const button = document.createElement('button');
+            button.className = 'choice-btn';
+            button.textContent = choice;
+            button.onclick = (event) => checkAnswer(choice, correctAnswer, event.target);
+            choicesArea.appendChild(button);
+        });
+    }
+    function checkAnswer(selectedAnswer, correctAnswer, clickedButton) {
+        clearInterval(timerInterval);
+        disableChoices();
+        if (selectedAnswer === correctAnswer) {
+            score++;
+            clickedButton.classList.add('correct');
+        } else {
+            clickedButton.classList.add('incorrect');
+            missedOnThisAttempt.push(levelQuestions[currentQuestionIndex]);
+        }
+        updateScoreDisplay();
+        setTimeout(() => { currentQuestionIndex++; loadQuestion(); }, 1200);
+    }
+    function startTimer(duration) {
+        let timerValue = duration;
+        const timerProgress = document.getElementById('timer-progress');
+        timerProgress.style.transition = 'none';
+        timerProgress.style.backgroundColor = 'var(--chalk-green)';
+        timerProgress.style.width = '100%';
+        void timerProgress.offsetWidth;
+        timerProgress.style.transition = 'width 0.1s linear, background-color 0.5s';
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timerValue--;
+            timerProgress.style.width = `${(timerValue / duration) * 100}%`;
+            if (timerValue / duration < 0.6) timerProgress.style.backgroundColor = 'var(--chalk-yellow)';
+            if (timerValue / duration < 0.3) timerProgress.style.backgroundColor = 'var(--chalk-red)';
+            if (timerValue < 0) {
+                clearInterval(timerInterval);
+                disableChoices();
+                missedOnThisAttempt.push(levelQuestions[currentQuestionIndex]);
+                setTimeout(() => { currentQuestionIndex++; loadQuestion(); }, 1200);
+            }
+        }, 1000);
+    }
+    function getStarHTML(count) {
+        let html = '';
+        for(let i=0; i<3; i++){ html += `<span class="star ${i < count ? 'filled' : ''}">${i < count ? '★' : '☆'}</span>`; }
+        return html;
+    }
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+    function disableChoices() { choicesArea.querySelectorAll('.choice-btn').forEach(button => button.disabled = true); }
+
+    document.getElementById('goto-level-select-btn').addEventListener('click', () => showScreen('level-select-screen'));
+    document.getElementById('reset-progress-btn').addEventListener('click', resetProgress);
+    document.getElementById('toggle-lang-btn').addEventListener('click', toggleLanguage);
+    document.getElementById('back-to-main-menu-btn').addEventListener('click', () => showScreen('main-menu-screen'));
+    document.getElementById('begin-level-btn').addEventListener('click', startLevel);
+    document.getElementById('back-to-levels-from-start-btn').addEventListener('click', () => showScreen('level-select-screen'));
+    document.getElementById('back-to-levels-btn').addEventListener('click', () => showScreen('level-select-screen'));
+    document.getElementById('retry-level-btn').addEventListener('click', () => showScreen('level-start-screen'));
+    document.getElementById('continue-level-btn').addEventListener('click', (e) => {
+        if(!e.target.disabled && currentLevelIndex < levels.length - 1) {
+            currentLevelIndex++;
+            showScreen('level-start-screen');
+        }
+    });
+
+    initializeQuestions();
+    loadProgress();
+    showScreen('main-menu-screen');
+</script>
+
+</body>
+</html>
