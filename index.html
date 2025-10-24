@@ -653,7 +653,16 @@
     function loadProgress() {
         const saved = localStorage.getItem('speedMathProgress');
         gameProgress = saved ? JSON.parse(saved) : defaultGameProgress();
+        const urlParams = new URLSearchParams(window.location.search);
+        const langParam = urlParams.get('lang'); // Check for 'lang' in the URL
+        if (langParam === 'ar') {
+            // If URL parameter is 'ar', set it as the current language
+            currentLanguage = 'ar';
+            // Also, save this choice so it's remembered for future visits
+            localStorage.setItem('speedMathLanguage', 'ar'); 
+        } else {
         currentLanguage = localStorage.getItem('speedMathLanguage') || 'en';
+        }
         document.body.classList.toggle('rtl', currentLanguage === 'ar');
     }
     function resetProgress() {
@@ -787,6 +796,7 @@
 
 </body>
 </html>
+
 
 
 
